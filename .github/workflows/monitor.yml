@@ -1,0 +1,51 @@
+name: Job monitor
+
+on:
+  schedule:
+    - cron: "0 15 * * *"   # daily ~7-8am Pacific
+  workflow_dispatch: {}     # adds a manual "Run workflow" button
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install requests pyyaml
+
+      - name: Run monitor
+        env:
+          USAJOBS_EMAIL: ${{ secrets.USAJOBS_EMAIL }}
+          USAJOBS_KEY: ${{ secrets.USAJOBS_KEY }}
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+        run: python monitor.py
+
+      - name: Open issue if digest has content
+        run: |
+          if [ -s digest.md ]; then
+            gh issue create \
+              --title "Job matches — $(date -u +%Y-%m-%d)" \
+              --body-file digest.md \
+              --repo "$GITHUB_REPOSITORY"
+          else
+            echo "No new matches today."
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit updated state
+        run: |
+          git config user.name "job-monitor-bot"
+          git config user.email "actions@github.com"
+          git add seen_jobs.json history.jsonl open_matches.json
+          git diff --cached --quiet || git commit -m "State update $(date -u +%Y-%m-%d)"
+          git push
