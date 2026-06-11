@@ -248,6 +248,10 @@ def main():
         print(f"  SOURCE ERROR: {e}", file=sys.stderr)
 
     digest = build_digest(new_matches, closed, errors, first_run)
+    if len(digest) > 60000:
+        cut = digest[:60000]
+        cut = cut[:cut.rfind("\n")]
+        digest = cut + "\n\n---\n*Digest truncated to fit GitHub's issue size limit; lower-scored matches omitted. Full history is in `history.jsonl`.*"
     DIGEST_PATH.write_text(digest)
 
 
