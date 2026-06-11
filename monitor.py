@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 """
-Job monitor v2.1.
-Sources are failure-isolated: any source erroring is logged and skipped.
-Pipeline: fetch -> weighted keyword scoring -> Core/Adjacent tiers ->
-diff vs seen_jobs.json -> digest.md -> history.jsonl -> Sunday roll-up ->
-closed-posting detection. Digest auto-truncates to fit GitHub's issue limit.
+Job monitor v2.2.
+Sources are failure-isolated. Scoring: title keywords sum; location adds ONE
+capped boost; positive title signal required. Digest auto-truncates.
 """
 
 import json
@@ -150,18 +148,26 @@ def fetch_80k(cfg):
 
 # ============================================================== scoring ===
 
-W = CONFIG["scoring"]["weights"]
-HARD = [re.compile(rf"\b{re.escape(t)}\b", re.I) for t in CONFIG["scoring"]["hard_exclude"]]
-TERMS = [(re.compile(rf"\b{re.escape(t)}\b", re.I), w) for t, w in W.items()]
-CORE_T = CONFIG["scoring"]["core_threshold"]
-ADJ_T = CONFIG["scoring"]["adjacent_threshold"]
+SC = CONFIG["scoring"]
+HARD = [re.compile(rf"\b{re.escape(t)}\b", re.I) for t in SC["hard_exclude"]]
+TERMS = [(re.compile(rf"\b{re.escape(t)}\b", re.I), w) for t, w in SC["weights"].items()]
+LOC_BOOSTS = [(re.compile(rf"\b{re.escape(t)}\b", re.I), w)
+              for t, w in SC.get("location_boosts", {}).items()]
+CORE_T = SC["core_threshold"]
+ADJ_T = SC["adjacent_threshold"]
+LOC_CAP = 3
 
 
 def score(job):
-    text = f"{job['title']} {job.get('location', '')}"
-    if any(p.search(job["title"]) for p in HARD):
+    title = job["title"]
+    if any(p.search(title) for p in HARD):
         return None
-    s = sum(w for p, w in TERMS if p.search(text))
+    t = sum(w for p, w in TERMS if p.search(title))
+    if t <= 0:
+        return None
+    loc = job.get("location", "") or ""
+    lb = max([w for p, w in LOC_BOOSTS if p.search(loc)], default=0)
+    s = t + min(lb, LOC_CAP)
     return s if s >= ADJ_T else None
 
 
