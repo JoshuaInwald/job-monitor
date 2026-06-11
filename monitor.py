@@ -1,21 +1,10 @@
 #!/usr/bin/env python3
 """
-Job monitor v2.
-
-Sources (each fully failure-isolated — any source erroring is logged and
-skipped, the run always completes):
-  - Greenhouse / Lever / Ashby public job-board APIs (per-company)
-  - Workday (per-company, unofficial endpoint, best effort)
-  - USAJobs official API (optional; needs free key in repo secrets)
-  - Adzuna aggregator API (optional; needs free key in repo secrets)
-  - 80,000 Hours job board (best effort)
-
-Pipeline: fetch everything -> score each posting with weighted keywords ->
-tier into Core / Adjacent -> diff against seen_jobs.json -> write digest.md
-(new matches) -> append to history.jsonl -> on Sundays add weekly roll-up ->
-report previously-matched postings that disappeared ("likely closed").
-
-State files committed to the repo: seen_jobs.json, history.jsonl, open_matches.json
+Job monitor v2.1.
+Sources are failure-isolated: any source erroring is logged and skipped.
+Pipeline: fetch -> weighted keyword scoring -> Core/Adjacent tiers ->
+diff vs seen_jobs.json -> digest.md -> history.jsonl -> Sunday roll-up ->
+closed-posting detection. Digest auto-truncates to fit GitHub's issue limit.
 """
 
 import json
@@ -38,10 +27,10 @@ DIGEST_PATH = ROOT / "digest.md"
 HEADERS = {"User-Agent": "Mozilla/5.0 (job-monitor; personal job alert script)"}
 TIMEOUT = 30
 NOW = datetime.now(timezone.utc)
+MAX_DIGEST_CHARS = 60000
 
 
 # ============================================================== fetchers ===
-# Every fetcher yields dicts: {id, title, location, url, company}
 
 def fetch_greenhouse(c):
     r = requests.get(f"https://boards-api.greenhouse.io/v1/boards/{c['slug']}/jobs",
@@ -74,7 +63,6 @@ def fetch_ashby(c):
 
 
 def fetch_workday(c):
-    """Unofficial Workday CXS endpoint; paginates 20 at a time, capped at 200."""
     base = f"https://{c['tenant']}.{c['host']}.myworkdayjobs.com"
     api = f"{base}/wday/cxs/{c['tenant']}/{c['site']}/jobs"
     offset = 0
@@ -121,7 +109,8 @@ def fetch_usajobs(cfg):
                 continue
             yield {"id": f"usa-{item.get('MatchedObjectId')}",
                    "title": d.get("PositionTitle", ""), "location": loc,
-                   "url": d.get("PositionURI", ""), "company": d.get("OrganizationName", "US Gov")}
+                   "url": d.get("PositionURI", ""),
+                   "company": d.get("OrganizationName", "US Gov")}
 
 
 def fetch_adzuna(cfg):
@@ -132,7 +121,7 @@ def fetch_adzuna(cfg):
     for q in cfg.get("queries", []):
         r = requests.get("https://api.adzuna.com/v1/api/jobs/us/search/1",
                          params={"app_id": app_id, "app_key": app_key, "what": q,
-                                 "where": cfg.get("where", ""), 
+                                 "where": cfg.get("where", ""),
                                  "results_per_page": cfg.get("max_per_query", 10)},
                          headers=HEADERS, timeout=TIMEOUT)
         r.raise_for_status()
@@ -144,7 +133,6 @@ def fetch_adzuna(cfg):
 
 
 def fetch_80k(cfg):
-    """80,000 Hours job board. Endpoint is unofficial; best effort."""
     r = requests.get("https://api.80000hours.org/job-board/vacancies",
                      headers=HEADERS, timeout=TIMEOUT)
     r.raise_for_status()
@@ -170,7 +158,7 @@ ADJ_T = CONFIG["scoring"]["adjacent_threshold"]
 
 
 def score(job):
-    text = f"{job['title']} {job.get('location','')}"
+    text = f"{job['title']} {job.get('location', '')}"
     if any(p.search(job["title"]) for p in HARD):
         return None
     s = sum(w for p, w in TERMS if p.search(text))
@@ -200,7 +188,6 @@ def collect():
         except Exception as e:
             errors.append(f"{name}: {type(e).__name__}: {e}")
 
-    # dedupe by id
     uniq = {}
     for j in jobs:
         uniq.setdefault(j["id"], j)
@@ -224,18 +211,15 @@ def main():
         j["tier"] = "core" if s >= CORE_T else "adjacent"
         if j["id"] not in seen:
             new_matches.append(j)
-        # track every currently-open match for closed-detection
         prev_open[j["id"]] = {"title": j["title"], "company": j["company"],
                               "url": j["url"], "last_seen": NOW.isoformat()}
 
-    # closed = previously open matches no longer present anywhere
     closed = {k: v for k, v in prev_open.items()
               if k not in current_ids
               and (NOW - datetime.fromisoformat(v["last_seen"])).days >= 2}
     for k in closed:
         prev_open.pop(k)
 
-    # persist state
     SEEN_PATH.write_text(json.dumps(sorted(seen | current_ids)))
     OPEN_PATH.write_text(json.dumps(prev_open, indent=1))
     with HISTORY_PATH.open("a") as f:
@@ -248,10 +232,12 @@ def main():
         print(f"  SOURCE ERROR: {e}", file=sys.stderr)
 
     digest = build_digest(new_matches, closed, errors, first_run)
-    if len(digest) > 60000:
-        cut = digest[:60000]
+    if len(digest) > MAX_DIGEST_CHARS:
+        cut = digest[:MAX_DIGEST_CHARS]
         cut = cut[:cut.rfind("\n")]
-        digest = cut + "\n\n---\n*Digest truncated to fit GitHub's issue size limit; lower-scored matches omitted. Full history is in `history.jsonl`.*"
+        digest = cut + ("\n\n---\n*Digest truncated to fit GitHub's issue size "
+                        "limit; lower-scored matches omitted. Full record is in "
+                        "`history.jsonl`.*")
     DIGEST_PATH.write_text(digest)
 
 
@@ -278,7 +264,6 @@ def build_digest(new_matches, closed, errors, first_run):
             parts.append(f"- ~~{v['title']}~~ @ {v['company']}")
         parts.append("")
 
-    # Sunday weekly roll-up
     if NOW.weekday() == 6 and HISTORY_PATH.exists():
         week_ago = NOW - timedelta(days=7)
         week = [json.loads(l) for l in HISTORY_PATH.read_text().splitlines() if l.strip()]
@@ -286,7 +271,7 @@ def build_digest(new_matches, closed, errors, first_run):
         if week:
             parts.append(f"## Weekly roll-up ({len(week)} matches in past 7 days)\n")
             for j in sorted(week, key=lambda x: -x.get("score", 0)):
-                parts.append(f"- [{j.get('score','?')}] [{j['title']}]({j['url']}) @ {j['company']}")
+                parts.append(f"- [{j.get('score', '?')}] [{j['title']}]({j['url']}) @ {j['company']}")
             parts.append("")
 
     if errors and parts:
