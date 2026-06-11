@@ -1,0 +1,192 @@
+# ============================================================================
+# JOB MONITOR CONFIG — edit freely, plain text
+# ============================================================================
+# Boards: greenhouse | lever | ashby | workday | (usajobs, adzuna, 80k are
+# configured in their own sections below).
+#
+# To find a company's slug: open its careers page and look at the URL —
+#   boards.greenhouse.io/<slug> | jobs.lever.co/<slug> | jobs.ashbyhq.com/<slug>
+# Workday entries need three parts, visible in the careers URL:
+#   <tenant>.<host>.myworkdayjobs.com/<site>
+#   e.g. https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite
+#   -> {tenant: nvidia, host: wd5, site: NVIDIAExternalCareerSite}
+#
+# NOTE: some slugs below are best guesses — the first run's log shows which
+# ones errored (company name + reason). Fix or delete those lines; nothing
+# else breaks.
+# ============================================================================
+
+companies:
+  # --- AI labs / frontier ---
+  - {name: Anthropic,        board: greenhouse, slug: anthropic}
+  - {name: OpenAI,           board: ashby,      slug: openai}
+  - {name: Google DeepMind,  board: greenhouse, slug: deepmind}
+  - {name: Scale AI,         board: greenhouse, slug: scaleai}
+  - {name: Cohere,           board: ashby,      slug: cohere}
+  - {name: Mistral AI,       board: lever,      slug: mistral}
+  - {name: xAI,              board: ashby,      slug: xai}
+  - {name: Hugging Face,     board: greenhouse, slug: huggingface}
+
+  # --- Tech with trust & safety / integrity / behavioral teams ---
+  - {name: Discord,          board: greenhouse, slug: discord}
+  - {name: Reddit,           board: greenhouse, slug: reddit}
+  - {name: Pinterest,        board: greenhouse, slug: pinterest}
+  - {name: Roblox,           board: ashby,      slug: roblox}
+  - {name: Twitch,           board: greenhouse, slug: twitch}
+  - {name: Duolingo,         board: greenhouse, slug: duolingo}
+  - {name: Figma,            board: greenhouse, slug: figma}
+  - {name: Stripe,           board: greenhouse, slug: stripe}
+  - {name: Airbnb,           board: greenhouse, slug: airbnb}
+  - {name: Lyft,             board: greenhouse, slug: lyft}
+  - {name: Robinhood,        board: greenhouse, slug: robinhood}
+  - {name: Notion,           board: greenhouse, slug: notion}
+  - {name: Match Group,      board: greenhouse, slug: matchgroup}
+  - {name: Bumble,           board: greenhouse, slug: bumble}
+
+  # --- Research / survey / data orgs ---
+  - {name: Morning Consult,  board: greenhouse, slug: morningconsult}
+  - {name: YouGov,           board: greenhouse, slug: yougov}
+  - {name: Prolific,         board: ashby,      slug: prolific}
+  - {name: Verasight,        board: lever,      slug: verasight}
+
+  # --- Behavioral / policy / civic ---
+  - {name: ideas42,          board: lever,      slug: ideas42}
+  - {name: Code for America, board: greenhouse, slug: codeforamerica}
+
+  # --- Workday-based (best effort; verify tenant/host/site from careers URL) ---
+  - {name: RAND,             board: workday, tenant: rand,    host: wd1, site: External_Career_Site}
+  - {name: Nielsen,          board: workday, tenant: nielsen, host: wd1, site: Nielsen_Careers}
+  - {name: Salesforce,       board: workday, tenant: salesforce, host: wd12, site: External_Career_Site}
+
+# ----------------------------------------------------------------------------
+# USAJobs (federal roles). FREE API key: https://developer.usajobs.gov/apirequest
+# After signup, add repo secrets USAJOBS_EMAIL and USAJOBS_KEY (see README).
+# If secrets are absent, this source is silently skipped.
+usajobs:
+  enabled: true
+  search_terms: ["behavioral scientist", "social scientist", "survey statistician", "policy analyst"]
+  locations: ["Los Angeles, California", "Washington, DC"]
+  remote_ok: true
+
+# ----------------------------------------------------------------------------
+# Adzuna (aggregator across many boards). FREE key: https://developer.adzuna.com
+# Add repo secrets ADZUNA_APP_ID and ADZUNA_APP_KEY. Skipped if absent.
+adzuna:
+  enabled: true
+  queries: ["behavioral scientist", "trust and safety research", "quantitative UX researcher", "survey scientist"]
+  where: "Los Angeles"
+  max_per_query: 10
+
+# ----------------------------------------------------------------------------
+# 80,000 Hours job board (AI safety / policy focused). No key needed.
+eightyk:
+  enabled: true
+
+# ============================================================================
+# SCORING — weighted keywords. Score = sum of all matching term weights
+# (title + location text). Tiers: score >= core_threshold -> "Core matches";
+# adjacent_threshold..core -> "Adjacent / worth a look"; below -> ignored.
+# Negative weights demote; a hard_exclude term kills a posting outright.
+# ============================================================================
+scoring:
+  core_threshold: 8
+  adjacent_threshold: 4
+
+  weights:
+    # --- bullseye (your actual targets) ---
+    behavioral science: 12
+    behavioral scientist: 12
+    behavioural: 10
+    societal impacts: 12
+    trust and safety: 10
+    "trust & safety": 10
+    safeguards: 10
+    responsible ai: 9
+    ai policy: 10
+    ai governance: 9
+    policy research: 9
+    research scientist: 8
+    quantitative researcher: 9
+    quantitative ux: 10
+    survey: 8
+    survey methodologist: 12
+    social science: 9
+    misinformation: 9
+    election: 8
+    civic: 7
+    risk perception: 12
+    climate: 6
+    persuasion: 9
+
+    # --- solid (good-fit titles) ---
+    ux researcher: 6
+    user researcher: 6
+    policy analyst: 7
+    public policy: 7
+    data scientist: 5
+    research manager: 6
+    people analytics: 6
+    insights: 4
+    applied scientist: 4
+    decision science: 8
+    experimentation: 5
+    integrity: 6
+    platform policy: 8
+    content policy: 7
+    safety: 4
+
+    # --- adjacent (wouldn't totally suck) ---
+    market research: 4
+    strategy: 3
+    program manager: 3
+    data analyst: 3
+    research associate: 3
+    policy advisor: 5
+    sustainability: 3
+
+    # --- location boosts (matched against location field) ---
+    los angeles: 3
+    remote: 3
+    "new york": 2
+    washington: 2
+    san francisco: 2
+
+    # --- demotions (legit roles, wrong flavor) ---
+    machine learning: -5
+    deep learning: -6
+    pretraining: -10
+    inference: -6
+    infrastructure: -8
+    frontend: -10
+    backend: -10
+    full stack: -10
+    finance: -4
+    accounting: -8
+    marketing: -2
+    legal counsel: -8
+    counsel: -6
+    physician: -10
+    clinical: -6
+    nurse: -10
+
+  hard_exclude:
+    - intern
+    - internship
+    - co-op
+    - software engineer
+    - staff engineer
+    - security engineer
+    - site reliability
+    - hardware
+    - account executive
+    - account manager
+    - sales
+    - recruiter
+    - sourcer
+    - executive assistant
+    - administrative assistant
+    - customer support
+    - customer success
+    - solutions architect
+    - warehouse
+    - driver
