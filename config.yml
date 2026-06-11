@@ -3,8 +3,8 @@
 # Boards: greenhouse | lever | ashby | workday
 # Slug = ID in careers URL: boards.greenhouse.io/<slug> | jobs.lever.co/<slug>
 #   | jobs.ashbyhq.com/<slug>
-# Workday: <tenant>.<host>.myworkdayjobs.com/<site>
-# Wrong slugs error harmlessly (listed in digest footer) — delete or fix them.
+# Wrong slugs error harmlessly (digest footer) — to fix one: open the org's
+# careers page, click any job, read the URL; it names the board and slug.
 # ============================================================================
 
 companies:
@@ -17,11 +17,11 @@ companies:
   - {name: Mistral AI,       board: lever,      slug: mistral}
   - {name: xAI,              board: greenhouse, slug: xai}
 
-  # --- AI safety / research orgs (mission-aligned, some below comp floor) ---
-  - {name: Open Philanthropy, board: greenhouse, slug: openphilanthropy}
-  - {name: Epoch AI,          board: ashby,      slug: epochai}
-  - {name: METR,              board: ashby,      slug: metr}
-  - {name: Redwood Research,  board: lever,      slug: redwoodresearch}
+  # --- AI safety / research orgs (alternate slug guesses, attempt 2) ---
+  - {name: Open Philanthropy, board: greenhouse, slug: openphil}
+  - {name: Epoch AI,          board: ashby,      slug: epoch}
+  - {name: METR,              board: greenhouse, slug: metr}
+  - {name: Redwood Research,  board: ashby,      slug: redwood-research}
 
   # --- Tech with T&S / integrity / behavioral / research teams ---
   - {name: Discord,          board: greenhouse, slug: discord}
@@ -36,29 +36,56 @@ companies:
   - {name: Robinhood,        board: greenhouse, slug: robinhood}
   - {name: Notion,           board: ashby,      slug: notion}
   - {name: Spotify,          board: lever,      slug: spotify}
-  - {name: Grammarly,        board: greenhouse, slug: grammarly}
   - {name: Coinbase,         board: greenhouse, slug: coinbase}
   - {name: DoorDash,         board: greenhouse, slug: doordashusa}
   - {name: Instacart,        board: greenhouse, slug: instacart}
   - {name: Waymo,            board: greenhouse, slug: waymo}
   - {name: Code for America, board: greenhouse, slug: codeforamerica}
 
+  # --- Behavior-change health tech (your literal training; several LA/remote) ---
+  - {name: Noom,             board: greenhouse, slug: noom}
+  - {name: Headspace,        board: greenhouse, slug: headspace}
+  - {name: Calm,             board: greenhouse, slug: calm}
+  - {name: Lyra Health,      board: greenhouse, slug: lyrahealth}
+  - {name: Omada Health,     board: greenhouse, slug: omadahealth}
+
+  # --- Learning science / edtech ---
+  - {name: Khan Academy,     board: greenhouse, slug: khanacademy}
+  - {name: Coursera,         board: greenhouse, slug: coursera}
+
+  # --- Gaming / player behavior (Riot HQ = Los Angeles) ---
+  - {name: Riot Games,       board: greenhouse, slug: riotgames}
+  - {name: Epic Games,       board: greenhouse, slug: epicgames}
+
+  # --- Dating apps (relationship science / T&S) ---
+  - {name: Hinge,            board: greenhouse, slug: hinge}
+  - {name: Tinder,           board: greenhouse, slug: tinder}
+
   # --- Workday-based ---
-  # RAND: to enable, open RAND's careers site, click any job, copy the URL:
-  #   https://rand.wd1.myworkdayjobs.com/SOMETHING/job/...
-  # Un-comment the line below and replace External_Career_Site with SOMETHING.
+  # RAND: open RAND careers, click any job; if the URL looks like
+  #   https://rand.wd1.myworkdayjobs.com/SOMETHING/job/... then un-comment
+  #   and replace External_Career_Site with SOMETHING.
   # - {name: RAND, board: workday, tenant: rand, host: wd1, site: External_Career_Site}
 
 # ----------------------------------------------------------------------------
 usajobs:
   enabled: true
-  search_terms: ["behavioral scientist", "social scientist", "survey statistician", "policy analyst"]
+  search_terms: ["behavioral scientist", "social scientist", "survey statistician", "policy analyst", "research psychologist", "program evaluation"]
   locations: ["Los Angeles, California", "Washington, DC"]
   remote_ok: true
 
 adzuna:
   enabled: true
-  queries: ["behavioral scientist", "trust and safety research", "quantitative UX researcher", "survey scientist"]
+  queries:
+    - "behavioral scientist"
+    - "trust and safety research"
+    - "quantitative UX researcher"
+    - "survey scientist"
+    - "people analytics"
+    - "consumer insights research"
+    - "public opinion research"
+    - "program evaluation"
+    - "experimentation data scientist"
   where: "Los Angeles"
   max_per_query: 10
 
@@ -66,11 +93,19 @@ eightyk:
   enabled: false
 
 # ============================================================================
-# SCORING
+# SCORING — title keywords sum; location contributes ONE capped boost (max
+# value among matches, ceiling +3). A posting must have positive title score.
 # ============================================================================
 scoring:
   core_threshold: 10
   adjacent_threshold: 6
+
+  location_boosts:
+    los angeles: 3
+    remote: 3
+    "new york": 2
+    washington: 2
+    san francisco: 2
 
   weights:
     # --- bullseye ---
@@ -79,6 +114,7 @@ scoring:
     behavioural: 10
     behavioral economics: 12
     behavioral insights: 12
+    behavior change: 11
     computational social: 12
     societal impacts: 12
     societal resilience: 11
@@ -113,6 +149,8 @@ scoring:
     persuasion: 9
     impact evaluation: 10
     program evaluation: 8
+    learning science: 9
+    player behavior: 10
 
     # --- solid ---
     ux researcher: 6
@@ -125,7 +163,7 @@ scoring:
     data scientist: 5
     research manager: 6
     people analytics: 6
-    insights: 4
+    insights: 3
     applied scientist: 4
     decision science: 9
     experimentation: 5
@@ -145,14 +183,7 @@ scoring:
     policy advisor: 5
     sustainability: 3
 
-    # --- location boosts ---
-    los angeles: 3
-    remote: 3
-    "new york": 2
-    washington: 2
-    san francisco: 2
-
-    # --- demotions: ML-research flavors you can't do ---
+    # --- demotions: ML-research flavors ---
     machine learning: -5
     deep learning: -6
     pretraining: -10
@@ -166,14 +197,41 @@ scoring:
     alignment: -4
     inference: -6
     agentic: -4
-    infrastructure: -8
+    foundation model: -8
+    personalization: -4
+    music: -4
+    search: -3
 
-    # --- demotions: wrong function ---
+    # --- demotions: robotics / AV (Waymo etc.) ---
+    autonomous: -8
+    perception: -8
+    robotics: -8
+    simulation: -6
+    vehicle: -6
+    fleet: -6
+    driving: -6
+    planning: -3
+
+    # --- demotions: ops / commerce / wrong function ---
+    infrastructure: -8
     product marketing: -8
+    integrated marketing: -6
     technical program manager: -4
+    associate manager: -5
     ads: -4
     monetization: -4
     growth: -3
+    logistics: -6
+    fulfillment: -6
+    merchant: -4
+    grocery: -6
+    restaurant: -6
+    delivery: -4
+    promotions: -4
+    partnerships: -4
+    compliance: -4
+    immigration: -6
+    "learning & development": -4
     frontend: -10
     backend: -10
     full stack: -10
@@ -190,25 +248,19 @@ scoring:
     - intern
     - internship
     - co-op
-    - software engineer
-    - staff engineer
-    - security engineer
-    - research engineer
-    - ml engineer
-    - machine learning engineer
-    - data engineer
-    - analytics engineer
-    - design engineer
-    - fullstack engineer
-    - forward deployed
-    - android
-    - ios engineer
+    - engineer
+    - engineering manager
+    - designer
+    - product design
     - site reliability
     - hardware
     - it systems
     - motion designer
+    - forward deployed
+    - android
     - account executive
     - account manager
+    - account development
     - sales
     - recruiter
     - sourcer
@@ -217,5 +269,6 @@ scoring:
     - customer support
     - customer success
     - solutions architect
+    - ediscovery
     - warehouse
     - driver
