@@ -22,6 +22,11 @@ companies:
   - {name: Epoch AI,          board: ashby,      slug: epoch}
   - {name: METR,              board: greenhouse, slug: metr}
   - {name: Redwood Research,  board: ashby,      slug: redwood-research}
+  - {name: Coefficient Giving (ex-Open Phil), board: ashby, slug: coefficientgiving}
+  - {name: METR,             board: lever,      slug: metr}
+  - {name: Noom,             board: greenhouse, slug: noomgrowth}
+  - {name: Headspace,        board: greenhouse, slug: hs}
+  - {name: Match Group (Tinder/Hinge), board: lever, slug: matchgroup}
 
   # --- Tech with T&S / integrity / behavioral / research teams ---
   - {name: Discord,          board: greenhouse, slug: discord}
