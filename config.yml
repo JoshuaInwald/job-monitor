@@ -1,10 +1,10 @@
 # ============================================================================
-# JOB MONITOR CONFIG
+# JOB MONITOR CONFIG — production version, June 2026
 # Boards: greenhouse | lever | ashby | workday
 # Slug = ID in careers URL: boards.greenhouse.io/<slug> | jobs.lever.co/<slug>
 #   | jobs.ashbyhq.com/<slug>
-# Wrong slugs error harmlessly (digest footer) — to fix one: open the org's
-# careers page, click any job, read the URL; it names the board and slug.
+# Wrong slugs error harmlessly (digest footer) — to fix: open org careers page,
+# click any job, read the URL; it names the board and slug explicitly.
 # ============================================================================
 
 companies:
@@ -17,18 +17,11 @@ companies:
   - {name: Mistral AI,       board: lever,      slug: mistral}
   - {name: xAI,              board: greenhouse, slug: xai}
 
-  # --- AI safety / research orgs (alternate slug guesses, attempt 2) ---
-  - {name: Open Philanthropy, board: greenhouse, slug: openphil}
-  - {name: Epoch AI,          board: ashby,      slug: epoch}
-  - {name: METR,              board: greenhouse, slug: metr}
-  - {name: Redwood Research,  board: ashby,      slug: redwood-research}
+  # --- AI safety / research orgs ---
   - {name: Coefficient Giving (ex-Open Phil), board: ashby, slug: coefficientgiving}
   - {name: METR,             board: lever,      slug: metr}
-  - {name: Noom,             board: greenhouse, slug: noomgrowth}
-  - {name: Headspace,        board: greenhouse, slug: hs}
-  - {name: Match Group (Tinder/Hinge), board: lever, slug: matchgroup}
 
-  # --- Tech with T&S / integrity / behavioral / research teams ---
+  # --- Tech: T&S / integrity / behavioral / research teams ---
   - {name: Discord,          board: greenhouse, slug: discord}
   - {name: Reddit,           board: greenhouse, slug: reddit}
   - {name: Pinterest,        board: greenhouse, slug: pinterest}
@@ -46,51 +39,53 @@ companies:
   - {name: Instacart,        board: greenhouse, slug: instacart}
   - {name: Waymo,            board: greenhouse, slug: waymo}
   - {name: Code for America, board: greenhouse, slug: codeforamerica}
+  - {name: Match Group (Tinder/Hinge), board: lever, slug: matchgroup}
 
-  # --- Behavior-change health tech (your literal training; several LA/remote) ---
-  - {name: Noom,             board: greenhouse, slug: noom}
-  - {name: Headspace,        board: greenhouse, slug: headspace}
+  # --- Behavior-change health tech ---
+  - {name: Noom,             board: greenhouse, slug: noomgrowth}
+  - {name: Headspace,        board: greenhouse, slug: hs}
   - {name: Calm,             board: greenhouse, slug: calm}
-  - {name: Lyra Health,      board: greenhouse, slug: lyrahealth}
   - {name: Omada Health,     board: greenhouse, slug: omadahealth}
 
   # --- Learning science / edtech ---
   - {name: Khan Academy,     board: greenhouse, slug: khanacademy}
   - {name: Coursera,         board: greenhouse, slug: coursera}
 
-  # --- Gaming / player behavior (Riot HQ = Los Angeles) ---
+  # --- Gaming / player behavior (Riot HQ = LA) ---
   - {name: Riot Games,       board: greenhouse, slug: riotgames}
   - {name: Epic Games,       board: greenhouse, slug: epicgames}
 
-  # --- Dating apps (relationship science / T&S) ---
-  - {name: Hinge,            board: greenhouse, slug: hinge}
-  - {name: Tinder,           board: greenhouse, slug: tinder}
-
-  # --- Workday-based ---
-  # RAND: open RAND careers, click any job; if the URL looks like
-  #   https://rand.wd1.myworkdayjobs.com/SOMETHING/job/... then un-comment
-  #   and replace External_Career_Site with SOMETHING.
+  # --- Workday-based (best effort) ---
+  # RAND: open RAND careers, click any job; if URL is
+  #   https://rand.wd1.myworkdayjobs.com/SOMETHING/job/...
+  # un-comment and replace External_Career_Site with SOMETHING.
   # - {name: RAND, board: workday, tenant: rand, host: wd1, site: External_Career_Site}
 
 # ----------------------------------------------------------------------------
 usajobs:
   enabled: true
-  search_terms: ["behavioral scientist", "social scientist", "survey statistician", "policy analyst", "research psychologist", "program evaluation"]
+  search_terms:
+    - behavioral scientist
+    - social scientist
+    - survey statistician
+    - policy analyst
+    - research psychologist
+    - program evaluation
   locations: ["Los Angeles, California", "Washington, DC"]
   remote_ok: true
 
 adzuna:
   enabled: true
   queries:
-    - "behavioral scientist"
-    - "trust and safety research"
-    - "quantitative UX researcher"
-    - "survey scientist"
-    - "people analytics"
-    - "consumer insights research"
-    - "public opinion research"
-    - "program evaluation"
-    - "experimentation data scientist"
+    - behavioral scientist
+    - trust and safety research
+    - quantitative UX researcher
+    - survey scientist
+    - people analytics
+    - consumer insights research
+    - public opinion research
+    - program evaluation
+    - experimentation data scientist
   where: "Los Angeles"
   max_per_query: 10
 
@@ -98,8 +93,11 @@ eightyk:
   enabled: false
 
 # ============================================================================
-# SCORING — title keywords sum; location contributes ONE capped boost (max
-# value among matches, ceiling +3). A posting must have positive title score.
+# SCORING
+# Title keywords sum; location contributes ONE capped boost (max +3).
+# Positive title score required. Seniority demotions applied to titles.
+# Tiers: >= core_threshold -> Core; adjacent_threshold..core -> Adjacent.
+# hard_exclude kills outright (matched against title only).
 # ============================================================================
 scoring:
   core_threshold: 10
@@ -113,7 +111,9 @@ scoring:
     san francisco: 2
 
   weights:
-    # --- bullseye ---
+    # -------------------------------------------------------------------------
+    # BULLSEYE
+    # -------------------------------------------------------------------------
     behavioral science: 12
     behavioral scientist: 12
     behavioural: 10
@@ -135,7 +135,6 @@ scoring:
     preparedness: 8
     dangerous capability: 9
     policy research: 9
-    research scientist: 8
     quantitative researcher: 9
     quantitative ux: 10
     survey: 8
@@ -157,7 +156,11 @@ scoring:
     learning science: 9
     player behavior: 10
 
-    # --- solid ---
+    # -------------------------------------------------------------------------
+    # SOLID
+    # -------------------------------------------------------------------------
+    research scientist: 8
+    research economist: 10
     ux researcher: 6
     user researcher: 6
     user insights: 6
@@ -165,10 +168,10 @@ scoring:
     human factors: 6
     policy analyst: 7
     public policy: 7
+    policy: 4
     data scientist: 5
     research manager: 6
     people analytics: 6
-    insights: 3
     applied scientist: 4
     decision science: 9
     experimentation: 5
@@ -178,8 +181,11 @@ scoring:
     safety: 4
     economist: 5
     evaluation: 4
+    insights: 3
 
-    # --- adjacent ---
+    # -------------------------------------------------------------------------
+    # ADJACENT
+    # -------------------------------------------------------------------------
     market research: 4
     strategy: 3
     program manager: 3
@@ -188,7 +194,24 @@ scoring:
     policy advisor: 5
     sustainability: 3
 
-    # --- demotions: ML-research flavors ---
+    # -------------------------------------------------------------------------
+    # SENIORITY DEMOTIONS (4-7 yrs experience target band)
+    # -------------------------------------------------------------------------
+    "vp ": -8
+    "vice president": -8
+    "svp": -8
+    "evp": -8
+    "chief ": -6
+    "director": -6
+    "head of": -5
+    "head, ": -5
+    " head ": -5
+    "global head": -7
+    "managing director": -8
+
+    # -------------------------------------------------------------------------
+    # ML / AI-engineering you can't do
+    # -------------------------------------------------------------------------
     machine learning: -5
     deep learning: -6
     pretraining: -10
@@ -203,11 +226,14 @@ scoring:
     inference: -6
     agentic: -4
     foundation model: -8
+    foundation models: -8
     personalization: -4
     music: -4
     search: -3
 
-    # --- demotions: robotics / AV (Waymo etc.) ---
+    # -------------------------------------------------------------------------
+    # Robotics / AV
+    # -------------------------------------------------------------------------
     autonomous: -8
     perception: -8
     robotics: -8
@@ -215,9 +241,10 @@ scoring:
     vehicle: -6
     fleet: -6
     driving: -6
-    planning: -3
 
-    # --- demotions: ops / commerce / wrong function ---
+    # -------------------------------------------------------------------------
+    # Wrong function / ops / commerce noise
+    # -------------------------------------------------------------------------
     infrastructure: -8
     product marketing: -8
     integrated marketing: -6
@@ -248,6 +275,7 @@ scoring:
     physician: -10
     clinical: -6
     nurse: -10
+    "strategy & operations": -3
 
   hard_exclude:
     - intern
