@@ -1,19 +1,11 @@
 # ============================================================================
 # JOB MONITOR CONFIG — edit freely, plain text
 # ============================================================================
-# Boards: greenhouse | lever | ashby | workday | (usajobs, adzuna, 80k are
-# configured in their own sections below).
-#
+# Boards: greenhouse | lever | ashby | workday
 # To find a company's slug: open its careers page and look at the URL —
 #   boards.greenhouse.io/<slug> | jobs.lever.co/<slug> | jobs.ashbyhq.com/<slug>
 # Workday entries need three parts, visible in the careers URL:
 #   <tenant>.<host>.myworkdayjobs.com/<site>
-#   e.g. https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite
-#   -> {tenant: nvidia, host: wd5, site: NVIDIAExternalCareerSite}
-#
-# NOTE: some slugs below are best guesses — the first run's log shows which
-# ones errored (company name + reason). Fix or delete those lines; nothing
-# else breaks.
 # ============================================================================
 
 companies:
@@ -24,14 +16,12 @@ companies:
   - {name: Scale AI,         board: greenhouse, slug: scaleai}
   - {name: Cohere,           board: ashby,      slug: cohere}
   - {name: Mistral AI,       board: lever,      slug: mistral}
-  - {name: xAI,              board: ashby,      slug: xai}
-  - {name: Hugging Face,     board: greenhouse, slug: huggingface}
+  - {name: xAI,              board: greenhouse, slug: xai}
 
   # --- Tech with trust & safety / integrity / behavioral teams ---
   - {name: Discord,          board: greenhouse, slug: discord}
   - {name: Reddit,           board: greenhouse, slug: reddit}
   - {name: Pinterest,        board: greenhouse, slug: pinterest}
-  - {name: Roblox,           board: ashby,      slug: roblox}
   - {name: Twitch,           board: greenhouse, slug: twitch}
   - {name: Duolingo,         board: greenhouse, slug: duolingo}
   - {name: Figma,            board: greenhouse, slug: figma}
@@ -39,29 +29,21 @@ companies:
   - {name: Airbnb,           board: greenhouse, slug: airbnb}
   - {name: Lyft,             board: greenhouse, slug: lyft}
   - {name: Robinhood,        board: greenhouse, slug: robinhood}
-  - {name: Notion,           board: greenhouse, slug: notion}
-  - {name: Match Group,      board: greenhouse, slug: matchgroup}
-  - {name: Bumble,           board: greenhouse, slug: bumble}
-
-  # --- Research / survey / data orgs ---
-  - {name: Morning Consult,  board: greenhouse, slug: morningconsult}
-  - {name: YouGov,           board: greenhouse, slug: yougov}
-  - {name: Prolific,         board: ashby,      slug: prolific}
-  - {name: Verasight,        board: lever,      slug: verasight}
-
-  # --- Behavioral / policy / civic ---
-  - {name: ideas42,          board: lever,      slug: ideas42}
+  - {name: Notion,           board: ashby,      slug: notion}
   - {name: Code for America, board: greenhouse, slug: codeforamerica}
 
-  # --- Workday-based (best effort; verify tenant/host/site from careers URL) ---
-  - {name: RAND,             board: workday, tenant: rand,    host: wd1, site: External_Career_Site}
-  - {name: Nielsen,          board: workday, tenant: nielsen, host: wd1, site: Nielsen_Careers}
-  - {name: Salesforce,       board: workday, tenant: salesforce, host: wd12, site: External_Career_Site}
+  # --- Workday-based ---
+  # RAND: my site-name guess failed. To fix: open RAND's careers site, click
+  # any job, copy the URL. If it looks like
+  #   https://rand.wd1.myworkdayjobs.com/SOMETHING/job/...
+  # then un-comment the line below (delete the leading "# ") and replace
+  # External_Career_Site with that SOMETHING segment, exactly as written.
+  # - {name: RAND, board: workday, tenant: rand, host: wd1, site: External_Career_Site}
 
 # ----------------------------------------------------------------------------
-# USAJobs (federal roles). FREE API key: https://developer.usajobs.gov/apirequest
-# After signup, add repo secrets USAJOBS_EMAIL and USAJOBS_KEY (see README).
-# If secrets are absent, this source is silently skipped.
+# USAJobs (federal roles). FREE key: https://developer.usajobs.gov/apirequest
+# Then add repo secrets USAJOBS_EMAIL and USAJOBS_KEY (README Step 5).
+# Skipped harmlessly until secrets exist.
 usajobs:
   enabled: true
   search_terms: ["behavioral scientist", "social scientist", "survey statistician", "policy analyst"]
@@ -69,8 +51,8 @@ usajobs:
   remote_ok: true
 
 # ----------------------------------------------------------------------------
-# Adzuna (aggregator across many boards). FREE key: https://developer.adzuna.com
-# Add repo secrets ADZUNA_APP_ID and ADZUNA_APP_KEY. Skipped if absent.
+# Adzuna (aggregator). FREE key: https://developer.adzuna.com
+# Add secrets ADZUNA_APP_ID and ADZUNA_APP_KEY. Skipped until secrets exist.
 adzuna:
   enabled: true
   queries: ["behavioral scientist", "trust and safety research", "quantitative UX researcher", "survey scientist"]
@@ -78,22 +60,21 @@ adzuna:
   max_per_query: 10
 
 # ----------------------------------------------------------------------------
-# 80,000 Hours job board (AI safety / policy focused). No key needed.
+# 80,000 Hours board — disabled until I find their correct endpoint.
 eightyk:
-  enabled: true
+  enabled: false
 
 # ============================================================================
-# SCORING — weighted keywords. Score = sum of all matching term weights
-# (title + location text). Tiers: score >= core_threshold -> "Core matches";
-# adjacent_threshold..core -> "Adjacent / worth a look"; below -> ignored.
-# Negative weights demote; a hard_exclude term kills a posting outright.
+# SCORING — weighted keywords. Score = sum of matching term weights
+# (title + location). Tiers: >= core_threshold -> "Core"; adjacent_threshold
+# up to core -> "Adjacent"; below -> ignored. hard_exclude kills outright.
 # ============================================================================
 scoring:
-  core_threshold: 8
-  adjacent_threshold: 4
+  core_threshold: 10
+  adjacent_threshold: 6
 
   weights:
-    # --- bullseye (your actual targets) ---
+    # --- bullseye ---
     behavioral science: 12
     behavioral scientist: 12
     behavioural: 10
@@ -118,7 +99,7 @@ scoring:
     climate: 6
     persuasion: 9
 
-    # --- solid (good-fit titles) ---
+    # --- solid ---
     ux researcher: 6
     user researcher: 6
     policy analyst: 7
@@ -135,7 +116,7 @@ scoring:
     content policy: 7
     safety: 4
 
-    # --- adjacent (wouldn't totally suck) ---
+    # --- adjacent ---
     market research: 4
     strategy: 3
     program manager: 3
@@ -144,14 +125,14 @@ scoring:
     policy advisor: 5
     sustainability: 3
 
-    # --- location boosts (matched against location field) ---
+    # --- location boosts ---
     los angeles: 3
     remote: 3
     "new york": 2
     washington: 2
     san francisco: 2
 
-    # --- demotions (legit roles, wrong flavor) ---
+    # --- demotions ---
     machine learning: -5
     deep learning: -6
     pretraining: -10
