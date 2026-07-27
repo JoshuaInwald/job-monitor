@@ -1,11 +1,12 @@
-# Job Monitor — Setup Guide (no coding knowledge assumed)
+# Job Monitor
 
-What this does: every morning (~7–8am Pacific), GitHub's servers run this
-script for free. It checks ~30 company job boards plus USAJobs, Adzuna, and
-the 80,000 Hours board, scores new postings against weighted keywords, and —
-if anything matches — posts a digest as a "GitHub Issue," which GitHub
-**emails to you automatically**. Your inbox is the newsletter. Your computer
-does nothing.
+Automated Python pipeline that polls 35 company career boards (Greenhouse, Lever, Ashby, and Workday APIs) plus USAJobs, Adzuna, and the 80,000 Hours job board, scores postings by weighted keyword relevance, and delivers a daily digest by email via GitHub Actions.
+
+**Stack:** Python (stdlib `requests`/`urllib` only, no scraping framework), GitHub Actions (cron scheduling + state persistence), REST APIs, YAML-driven configuration.
+
+**How it works:** a scheduled GitHub Actions workflow runs `monitor.py` daily. Each source has its own fetcher function (`fetch_greenhouse`, `fetch_lever`, `fetch_ashby`, `fetch_workday`, plus `fetch_usajobs`/`fetch_adzuna`/`fetch_80k`); a source failing (e.g. a company changes its board) logs an error without breaking the others. Postings are scored against a weighted keyword config (title-based term weights, location boosts, hard excludes), diffed against persisted state (`seen_jobs.json`, `open_matches.json`, `history.jsonl`) to find new/closed matches, and — if there's anything new — opened as a GitHub Issue, which GitHub emails automatically. No server, no scraping infrastructure, no cost.
+
+**How to run:** fork/clone, edit `config.yml` (companies + keyword weights), add repo secrets for `USAJOBS_KEY`/`ADZUNA_APP_KEY` (optional), then either let the scheduled workflow run or trigger it manually from the Actions tab. See the setup guide below for a no-code walkthrough.
 
 ---
 
